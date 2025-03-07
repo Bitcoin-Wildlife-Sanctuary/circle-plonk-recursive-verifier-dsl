@@ -122,11 +122,11 @@ impl AnswerResults {
                 );
                 for (shift_idx, (_, shifted_point)) in column.iter().enumerate() {
                     assert_eq!(
-                        shifted_point.x.value,
+                        shifted_point.x.value(),
                         fiat_shamir_hints.sample_points[round_idx][column_idx][shift_idx].x
                     );
                     assert_eq!(
-                        shifted_point.y.value,
+                        shifted_point.y.value(),
                         fiat_shamir_hints.sample_points[round_idx][column_idx][shift_idx].y
                     );
                 }
@@ -140,13 +140,13 @@ impl AnswerResults {
                 );
                 for (shift_idx, (_, shifted_point)) in column.iter().enumerate() {
                     assert_eq!(
-                        shifted_point.x.value,
+                        shifted_point.x.value(),
                         fiat_shamir_hints.sample_points[round_idx][round_plonk.len() + column_idx]
                             [shift_idx]
                             .x
                     );
                     assert_eq!(
-                        shifted_point.y.value,
+                        shifted_point.y.value(),
                         fiat_shamir_hints.sample_points[round_idx][round_plonk.len() + column_idx]
                             [shift_idx]
                             .y
@@ -336,7 +336,10 @@ impl AnswerResults {
                 .iter()
                 .zip(fri_answers.iter())
             {
-                assert_eq!(*map.get(&(k.bits.get_value().0 as usize)).unwrap(), v.value);
+                assert_eq!(
+                    *map.get(&(k.bits.get_value().0 as usize)).unwrap(),
+                    v.value()
+                );
             }
         }
 
@@ -401,7 +404,7 @@ mod test {
     #[test]
     fn test_answer() {
         let proof: PlonkWithPoseidonProof<Poseidon31MerkleHasher> =
-            bincode::deserialize(include_bytes!("../../test_data/small_proof.bin")).unwrap();
+            bincode::deserialize(include_bytes!("../../../test_data/small_proof.bin")).unwrap();
         let config = PcsConfig {
             pow_bits: 20,
             fri_config: FriConfig::new(0, 5, 16),
@@ -409,7 +412,7 @@ mod test {
 
         let fiat_shamir_hints = FiatShamirHints::new(&proof, config, &[(1, QM31::one())]);
 
-        let cs = ConstraintSystemRef::new_ref();
+        let cs = ConstraintSystemRef::new_qm31_ref();
         let mut proof_var = PlonkWithPoseidonProofVar::new_witness(&cs, &proof);
 
         let fiat_shamir_results = FiatShamirResults::compute(
@@ -436,7 +439,7 @@ mod test {
         cs.populate_logup_arguments();
         cs.check_poseidon_invocations();
 
-        let (plonk, mut poseidon) = cs.generate_circuit();
+        let (plonk, mut poseidon) = cs.generate_qm31_circuit();
         let proof =
             prove_plonk_with_poseidon::<Poseidon31MerkleChannel>(config, &plonk, &mut poseidon);
         verify_plonk_with_poseidon::<Poseidon31MerkleChannel>(
